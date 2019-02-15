@@ -11,6 +11,8 @@
 4. 區塊連點可以編輯， 可以拖曳 + 變更大小
 
 
+[try it](https://tianyili.github.io/img-create-add-comment/)
+
 ## Project setup
 ```
 yarn install
