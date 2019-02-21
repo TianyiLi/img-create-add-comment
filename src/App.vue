@@ -2,15 +2,19 @@
   <div id="app">
     <div class="ctn"
       v-if="hasImg">
-      <img :src="imgUrl"
-        alt=""
-        v-if="hasImg"
-        @dblclick="createElement($event)" />
+      <div class="ctn">
+        <img v-for="(url, j) of imgUrl"
+          :src="url"
+          :key="j"
+          alt=""
+          @dblclick="createElement($event)" />
+      </div>
       <div v-interact
         class="drag-drop-ele"
         :style="ele.style"
-        v-for="(ele, i) in eles"
-        :key="i"
+        v-for="(ele) in eles"
+        :key="ele.id"
+        :ref="`block${ele.id}`"
         @dblclick="ele.show && textBlockTrigger(ele.id)"
         :data-id="ele.id">
         <button style="top:0;right:0;position:absolute;"
@@ -33,11 +37,19 @@
     <div class="start"
       v-if="!hasImg">
       <label for="imgInput"
+        @drag.prevent.stop=""
+        @dragstart.prevent.stop=""
+        @dragend.prevent.stop=""
+        @dragover.prevent.stop=""
+        @dragenter.prevent.stop=""
+        @dragleave.prevent.stop=""
+        @drop.prevent.stop="dropFile($event)"
         class="fileInput">
-        {{fileName !== '' ? fileName:'點此檔案上傳'}}
+        {{fileName.length !== 0 ? fileName.join(', ') : '點此檔案上傳'}}
         <input type="file"
           name=""
           id="imgInput"
+          multiple
           @change="fileChange($event)" />
       </label>
       <button @click="hasImg = true">confirm</button>
@@ -61,8 +73,8 @@ export default {
     return {
       eles: [],
       inputIsShow: false,
-      fileName: '',
-      imgUrl: '',
+      fileName: [],
+      imgUrl: [],
       hasImg: false,
       textBlock: {
         id: -1,
@@ -79,6 +91,7 @@ export default {
           this.textBlock.id -= 1
         }
         this.textBlock.content = this.eles[this.textBlock.id - 1].text
+        window.scroll({ top: this.$refs[`block${this.textBlock.id}`][0].offsetTop, left: 0, behavior: 'smooth' })
       }
     },
     /** @param {MouseEvent} */
@@ -103,6 +116,7 @@ export default {
       console.log(id)
       this.textBlock.id = id
       this.textBlock.content = this.eles.find(e => e.id === id).text
+      window.scroll({ left: 0, top: this.$refs[`block${id}`][0].offsetTop, behavior: 'smooth' })
       this.inputIsShow = !this.inputIsShow
     },
     textBlockOnConfirm (content) {
@@ -114,16 +128,37 @@ export default {
         this.textBlock.id = this.eles.find(e => e.id >= this.textBlock.id + 1).id
       }
     },
-    fileChange (event) {
-      let files = event.target.files[0]
-      console.log(files.name)
-      this.fileName = files.name
-      let reader = new FileReader()
-      let self = this
-      reader.onload = e => {
-        self.imgUrl = e.target.result
+    dropFile (e) {
+      e.preventDefault()
+      e.stopPropagation()
+      let files = e.dataTransfer.files
+      let read = file => {
+        let reader = new FileReader()
+        reader.onload = e => {
+          this.imgUrl.push(e.target.result)
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(files)
+      for (let f of files) {
+        read(f)
+        this.fileName.push(f.name)
+      }
+    },
+    fileChange (event) {
+      let files = event.target.files
+      console.log(files)
+      this.fileName = []
+      let read = file => {
+        let reader = new FileReader()
+        reader.onload = e => {
+          this.imgUrl.push(e.target.result)
+        }
+        reader.readAsDataURL(file)
+      }
+      for (let f of files) {
+        read(f)
+        this.fileName.push(f.name)
+      }
     },
     exportToExcel () {
       let table = document.createElement('table')
@@ -172,6 +207,8 @@ html, body
   .ctn
     position relative
     img
+      display block
+      max-width 100vw
       user-select none
   .start
     display inline-block
@@ -227,6 +264,8 @@ button.addBlock
   left 0
   background rgba(0, 0, 0, 0.3)
 .modal
+  bottom 10em
+  position absolute
   display inline-block
 .bottom-text
   width 80vw
