@@ -1,3 +1,3 @@
 module.exports = {
-  publicPath: './'
+  publicPath: 'https://tianyili.github.io/img-create-add-comment/'
 }
